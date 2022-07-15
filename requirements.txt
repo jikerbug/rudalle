@@ -1,8 +1,13 @@
-rudalle==1.1.1
+
+
+
+
+fastapi
+uvicorn
 
 Flask==2.1.2
-Flask-Cors==3.0.9
-Flask-RESTful==0.3.8
+
+rudalle==1.1.1
 dalle-pytorch==0.14.3
 tqdm
 deepspeed==0.4.2

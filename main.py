@@ -21,8 +21,8 @@ rudalle_ar = RuDalleAspectRatio(
     server!
 '''
 
-
 from flask import Flask, request, jsonify
+
 from tqdm import tqdm
 import numpy as np
 from queue import Queue, Empty
@@ -42,11 +42,12 @@ from PIL import Image
 import base64
 from io import BytesIO
 
-app = Flask(__name__)
+from typing import Union
 
-requests_queue = Queue()  # request queue.
-REQUEST_BATCH_SIZE = 4  # max request size.
-CHECK_INTERVAL = 0.1
+from fastapi import FastAPI
+
+app = FastAPI()
+
 
 # load model
 
@@ -59,28 +60,8 @@ top_k = 0.9
 image_size = vae.image_size
 
 
-def handle_requests_by_batch():
-    while True:
-        request_batch = []
 
-        while not (len(request_batch) >= REQUEST_BATCH_SIZE):
-            try:
-                request_batch.append(requests_queue.get(timeout=CHECK_INTERVAL))
-            except Empty:
-                continue
-
-            for requests in request_batch:
-                try:
-                    requests["output"] = make_images(requests['input'][0], requests['input'][1])
-
-                except Exception as e:
-                    requests["output"] = e
-
-
-handler = Thread(target=handle_requests_by_batch).start()
-
-
-def make_images(text_input, num_images):
+async def make_images(text_input, num_images):
     try:
         print(text_input)
         _, result_pil_images = rudalle_ar.generate_images(text_input, 768, 0.99, 1)
@@ -103,11 +84,8 @@ def make_images(text_input, num_images):
         return jsonify({'Error': e}), 500
 
 
-@app.route('/generate', methods=['POST'])
-def generate():
-    if requests_queue.qsize() > REQUEST_BATCH_SIZE:
-        return jsonify({'Error': 'Too Many Requests. Please try again later'}), 429
-
+@app.post('/generate')
+async def generate():
     try:
         args = []
         json_data = request.get_json()
@@ -124,10 +102,7 @@ def generate():
         return jsonify({'Error': 'Invalid request'}), 500
 
     req = {'input': args}
-    requests_queue.put(req)
-
-    while 'output' not in req:
-        time.sleep(CHECK_INTERVAL)
+    req["output"] = await make_images(req['input'][0], req['input'][1])
 
     return jsonify(req['output'])
 
@@ -136,6 +111,3 @@ def generate():
 def health_check():
     return "Health", 200
 
-
-if __name__ == '__main__':
-    app.run(port=5000, host='0.0.0.0')

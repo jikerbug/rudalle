@@ -21,8 +21,6 @@ rudalle_ar = RuDalleAspectRatio(
     server!
 '''
 
-from flask import Flask, request, jsonify
-
 from tqdm import tqdm
 import numpy as np
 from queue import Queue, Empty

@@ -5,8 +5,6 @@
 fastapi
 uvicorn
 
-Flask==2.1.2
-
 rudalle==1.1.1
 dalle-pytorch==0.14.3
 tqdm

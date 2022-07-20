@@ -44,70 +44,62 @@ from io import BytesIO
 
 from typing import Union
 
-from fastapi import FastAPI
+from fastapi import Request, FastAPI
 
 app = FastAPI()
 
-
-# load model
-
-batch_size = 4
-
-top_k = 0.9
 
 # generate images
 
 image_size = vae.image_size
 
 
-
 async def make_images(text_input, num_images):
-    try:
-        print(text_input)
-        _, result_pil_images = rudalle_ar.generate_images(text_input, 768, 0.99, 1)
+    
+    print(text_input)
+    _, result_pil_images = rudalle_ar.generate_images(text_input, 768, 0.99, 1)
 
-        response = []
+    response = []
 
-        print(result_pil_images)
+    print(result_pil_images)
 
-        for img in result_pil_images:
+    for img in result_pil_images:
 
-            buffered = BytesIO()
-            img.save(buffered, format="JPEG")
-            img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-            response.append(img_str)
+        buffered = BytesIO()
+        img.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        response.append(img_str)
 
-        return response
+    return response
 
-    except Exception as e:
-        print('Error occur in script generating!', e)
-        return jsonify({'Error': e}), 500
 
 
 @app.post('/generate')
-async def generate():
-    try:
-        args = []
-        json_data = request.get_json()
-        text_input = json_data["text"]
-        num_images = json_data["num_images"]
+async def generate(request: Request):
+    
+    json_data = await request.json()
 
-        if num_images > 10:
-            return jsonify({'Error': 'Too many images requested. Request no more than 10'}), 500
 
-        args.append(text_input)
-        args.append(num_images)
+    text_input = json_data["text"]
+    num_images = json_data["num_images"]
 
-    except Exception as e:
-        return jsonify({'Error': 'Invalid request'}), 500
+
+    if num_images > 10:
+        return {'Error': 'Too many images requested. Request no more than 10'}.json(), 500
+
+    args = []
+    args.append(text_input)
+    args.append(num_images)
+
 
     req = {'input': args}
     req["output"] = await make_images(req['input'][0], req['input'][1])
 
-    return jsonify(req['output'])
+    print(req['output'])
+    return req['output']
 
 
-@app.route('/healthz', methods=["GET"])
-def health_check():
-    return "Health", 200
+@app.get("/healthz", status_code=200)
+def check_health():
+    return "healthy"
 

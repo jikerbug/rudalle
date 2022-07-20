@@ -21,17 +21,10 @@ rudalle_ar = RuDalleAspectRatio(
     server!
 '''
 
-from tqdm import tqdm
-import numpy as np
-from queue import Queue, Empty
-from threading import Thread
-import time
-
 # torch
 
 import torch
 
-from einops import repeat
 
 # vision imports
 
@@ -39,8 +32,6 @@ from PIL import Image
 
 import base64
 from io import BytesIO
-
-from typing import Union
 
 from fastapi import Request, FastAPI
 
